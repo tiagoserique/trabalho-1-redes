@@ -1,10 +1,14 @@
-int main(){
-  //Inicialização de variáveis
+#include "funcoes-cliente.h"
 
-  //Loop geral
-  while(1){
-    //Ler comando
-    
-    //Executar comando
-  }
+
+
+int main(){
+    //Inicialização de variáveis
+
+    //Loop geral
+    while(1){
+        //Ler comando
+        
+        //Executar comando
+    }
 }

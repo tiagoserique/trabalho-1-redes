@@ -1,10 +1,13 @@
-int main(){
-  //Inicialização de variáveis
+#include "funcoes-server.h"
 
-  //Loop geral
-  while(1){
-    //Ler comando
+
+int main(){
+    //Inicialização de variáveis
+
+    //Loop geral
+    while(1){
+        //Ler comando
     
-    //Executar comando
-  }
+        //Executar comando
+    }
 }
