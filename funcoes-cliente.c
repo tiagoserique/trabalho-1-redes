@@ -1,4 +1,0 @@
-
-#include "funcoes-cliente.h"
-
-
