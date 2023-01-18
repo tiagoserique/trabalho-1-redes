@@ -3,26 +3,40 @@
 
 void sendMessage(const int &sckt){
     char ch {};
-    package_t package {};
+    package_t start {};
     std::string message {};
     
     while ( (ch = (char) std::cin.get()) != STOP_INSERT_COMMAND ) message += ch;
 
-    initPackage(package, TEXT_PACKAGE);
-    strcpy(package.data, message.c_str());
-
-    ssize_t ret {send(sckt, &package, sizeof(package_t), 0)}; 
-    if ( ret >= 0 ){
-        std::cerr << "Successful message sent" << std::endl;
-        std::cerr << std::endl;
-        return;
-    }
-    else if ( ret < 0 ){
+    initPackage(start, START_PACKAGE);
+    ssize_t ret {send(sckt, &start, sizeof(package_t), 0)}; 
+    if ( ret < 0 ){
         std::cerr << "Error sending message" << std::endl;
         std::cerr << std::endl;
         std::cerr << errno << std::endl;
         return;
     }
+    package_t * packs {divideData(
+                      (void *)message.c_str(),
+                      message.size(),
+                      TEXT_PACKAGE,
+                      0)};
+
+    unsigned int packI {0};
+    package_t currPack = packs[0];
+    while ( currPack.type != END_PACKAGE ){
+        currPack = packs[packI];
+        ret = send(sckt, &currPack, sizeof(package_t), 0); 
+        if ( ret < 0 ){
+            std::cerr << "Error sending message" << std::endl;
+            std::cerr << std::endl;
+            std::cerr << errno << std::endl;
+            return;
+        }
+        packI++;
+    }
+    std::cerr << "Successful message sent" << std::endl;
+    std::cerr << std::endl;
 }
 
 
