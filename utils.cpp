@@ -38,13 +38,8 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
           packs[i].data[j] = cdata[dataIndex];
           dataIndex++;
         }
-
-        std::cout << "divideData: new package added to array" << std::endl;
-        printPackage(packs[i]);
     }
     initPackage(packs[numPacks], END_PACKAGE);
-    std::cout << "divideData: new package added to array" << std::endl;
-    printPackage(packs[numPacks]);
 
     return packs;
 }
