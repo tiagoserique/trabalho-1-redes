@@ -16,6 +16,39 @@ void initPackage(package_t &pckg, unsigned int type){
 
 // utils =======================================================================
 
+package_t * divideData(void * data, unsigned int size, unsigned int type, unsigned int seq){
+    if ( !data ) return NULL;
+    if ( size <= 0 ) return NULL;
+
+    unsigned int numPacks {size/64};
+    if ( size % 64 ) numPacks++;
+    char * cdata {(char *) data};
+
+    package_t * packs {(package_t *) malloc(sizeof(package_t) * numPacks + 1)};
+    if ( !packs ) return NULL;
+
+    unsigned int dataIndex {0};
+    for ( unsigned int i = 0; i < numPacks; i++ ){
+        initPackage(packs[i], type);
+        packs[i].sequence = seq;
+        seq = (seq + 1) % 16;
+
+        // copiar dados
+        for ( unsigned int j = 0; j < 64 && dataIndex < size; j++ ){
+          packs[i].data[j] = cdata[dataIndex];
+          dataIndex++;
+        }
+
+        std::cout << "divideData: new package added to array" << std::endl;
+        printPackage(packs[i]);
+    }
+    initPackage(packs[numPacks], END_PACKAGE);
+    std::cout << "divideData: new package added to array" << std::endl;
+    printPackage(packs[numPacks]);
+
+    return packs;
+}
+
 void printPackage(const package_t &pckg){
     std::cout << pckg.header   << std::endl;
     std::cout << pckg.type     << std::endl;

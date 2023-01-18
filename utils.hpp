@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <stdlib.h>
 #include <iostream>
+#include <array>
 
 
 // typedefs ====================================================================
@@ -58,6 +59,19 @@ const std::string SEND_COMMAND        {":send"};
     @return void
 */
 void initPackage(package_t &pckg, unsigned int type);
+
+/*
+    @brief Divides the data sent into an array of packages
+
+    @param data (void *)       : An array with the data that is going to be sent
+    @param size (unsigned int) : The size of the array data
+    @param type (unsigned int) : The type of the packages to be created
+    @param seq  (unsigned int) : The desired sequence number of the starting package
+
+    @return Returns an array of packages containing the data sent, the last element will have type END_PACKAGE
+    @return Returns NULL if there is an error
+*/
+package_t * divideData(void * data, unsigned int size, unsigned int type, unsigned int seq);
 
 /*
     @brief Print the package
