@@ -1,5 +1,15 @@
 #include "functions-client.hpp"
 
+// --------------------------
+// Internal functions headers
+// --------------------------
+
+unsigned int waitAck(unsigned int seq, const int &sckt);
+
+
+// ---------------
+// Implementations
+// ---------------
 
 void sendMessage(const int &sckt){
     char ch {};
@@ -25,6 +35,7 @@ void sendMessage(const int &sckt){
     unsigned int packI {0};
     package_t currPack = packs[0];
     while ( currPack.type != END_PACKAGE ){
+        // Send
         currPack = packs[packI];
         ret = send(sckt, &currPack, sizeof(package_t), 0); 
         if ( ret < 0 ){
@@ -33,7 +44,9 @@ void sendMessage(const int &sckt){
             std::cerr << errno << std::endl;
             return;
         }
-        packI++;
+
+        // Wait for ack ( if timed out resend )
+        packI += waitAck( (unsigned int)currPack.sequence, sckt);
     }
     std::cerr << "Successful message sent" << std::endl;
     std::cerr << std::endl;
@@ -54,4 +67,40 @@ void quitProgram(bool &stop){
     std::cerr << std::endl;
     std::cerr << "Bye! | Tchau! | Tchüss!" << std::endl;
     std::cerr << std::endl;
+}
+
+
+// Internal functions
+
+/*
+    @brief Waits for ack signal
+
+    @param seq (unsigned int) : desired sequence number of ack package
+    @param sckt (const int &) : The File Descriptor of the socket
+
+    @return 1 if received ack
+    @return 0 if timed out
+*/
+unsigned int waitAck(unsigned int seq, const int &sckt){
+    package_t ack {};
+    while ( true ){ // Timeout
+      ssize_t val {recv(sckt, &ack, sizeof(ack), 0)};
+      if ( val < 0 ){
+        std::cout << "Error receiving message" << std::endl;
+        return 0;
+      }
+
+      if ( ack.type != ACK_PACKAGE ){
+        // Save somewhere
+        continue;
+      }
+
+      if ( (unsigned int)ack.sequence != seq ){
+        // Save somewhere
+        continue;
+      }
+
+      return 1;
+    }
+    return 0;
 }
