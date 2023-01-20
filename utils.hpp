@@ -6,6 +6,7 @@
 
 #include <cstdlib>
 #include <stdlib.h>
+#include <net/if.h>
 #include <iostream>
 #include <array>
 
@@ -88,5 +89,16 @@ void printPackage(const package_t &pckg);
     @return void
 */
 void printDate();
+
+/*
+    @brief Sets the time to wait for receiving/sending on a socket
+
+    @param sckt (cont int &) : socket to set the timeout timer
+    @param useconds (unsigned int) : time in microseconds to set the timeout (1.000.000=1 second)
+
+    @return void
+*/
+void setSockTimeout(const int &sckt, const int useconds);
+
 
 #endif
