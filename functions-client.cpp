@@ -83,24 +83,25 @@ void quitProgram(bool &stop){
 */
 unsigned int waitAck(unsigned int seq, const int &sckt){
     package_t ack {};
-    while ( true ){ // Timeout
+
+    do{
       ssize_t val {recv(sckt, &ack, sizeof(ack), 0)};
-      if ( val < 0 ){
-        std::cout << "Error receiving message" << std::endl;
+      if ( val == -1 && ( errno = EAGAIN)){
+        std::cout << "Timed out" << std::endl;
         return 0;
       }
 
       if ( ack.type != ACK_PACKAGE ){
-        // Save somewhere
+        // TODO: Save somewhere
         continue;
       }
 
       if ( (unsigned int)ack.sequence != seq ){
-        // Save somewhere
+        // TODO: Save somewhere
         continue;
       }
 
+      printPackage(ack);
       return 1;
-    }
-    return 0;
+    } while ( true );
 }
