@@ -20,8 +20,8 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
     if ( !data ) return NULL;
     if ( size <= 0 ) return NULL;
 
-    unsigned int numPacks {size/64};
-    if ( size % 64 ) numPacks++;
+    unsigned int numPacks {size/63};
+    if ( size % 63 ) numPacks++;
     char * cdata {(char *) data};
 
     package_t * packs {(package_t *) malloc(sizeof(package_t) * numPacks + 1)};
@@ -34,10 +34,13 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
         seq = (seq + 1) % 16;
 
         // copiar dados
-        for ( unsigned int j = 0; j < 64 && dataIndex < size; j++ ){
+        unsigned int j {0};
+        while ( j < 63 && dataIndex < size ){
           packs[i].data[j] = cdata[dataIndex];
-          dataIndex++;
+          dataIndex++; j++;
         }
+        packs[i].size = j;
+        printPackage(packs[i]);
     }
     initPackage(packs[numPacks], END_PACKAGE);
 
