@@ -72,7 +72,7 @@ void initPackage(package_t &pckg, unsigned int type);
     @return Returns an array of packages containing the data sent, the last element will have type END_PACKAGE
     @return Returns NULL if there is an error
 */
-package_t * divideData(void * data, unsigned int size, unsigned int type, unsigned int seq, unsigned int src);
+package_t * divideData(void * data, unsigned int size, unsigned int type, unsigned int seq);
 
 /*
     @brief Combines data from an array of packages into an array of voids

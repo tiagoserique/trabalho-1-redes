@@ -16,7 +16,7 @@ void initPackage(package_t &pckg, unsigned int type){
 
 // utils =======================================================================
 
-package_t * divideData(void * data, unsigned int size, unsigned int type, unsigned int seq, unsigned int src){
+package_t * divideData(void * data, unsigned int size, unsigned int type, unsigned int seq){
     if ( !data ) return NULL;
     if ( size <= 0 ) return NULL;
 
@@ -32,8 +32,6 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
         initPackage(packs[i], type);
         packs[i].sequence = seq;
         seq = (seq + 1) % 16;
-
-        //TODO: add src to package
 
         // copiar dados
         unsigned int j {0};
