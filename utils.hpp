@@ -17,7 +17,7 @@ typedef struct package_t {
     unsigned int type     : 6; 
     unsigned int sequence : 4; 
     unsigned int size     : 6; 
-    char data[64]; 
+    char data[63]; 
     unsigned int crc      : 8;
 } package_t;
 
@@ -67,11 +67,21 @@ void initPackage(package_t &pckg, unsigned int type);
     @param size (unsigned int) : The size of the array data
     @param type (unsigned int) : The type of the packages to be created
     @param seq  (unsigned int) : The desired sequence number of the starting package
+    @param src  (unsigned int) : Who is sending the message
 
     @return Returns an array of packages containing the data sent, the last element will have type END_PACKAGE
     @return Returns NULL if there is an error
 */
 package_t * divideData(void * data, unsigned int size, unsigned int type, unsigned int seq);
+
+/*
+    @brief Combines data from an array of packages into an array of voids
+    
+    @param packs (package_t *) : An array of packages, first package with data, last package should have type END_PACKAGE
+
+    @return Returns an array of the data that was contained in the packages plus a '\0' at the end
+*/
+void * combineData(package_t * packs);
 
 /*
     @brief Print the package

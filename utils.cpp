@@ -20,8 +20,8 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
     if ( !data ) return NULL;
     if ( size <= 0 ) return NULL;
 
-    unsigned int numPacks {size/64};
-    if ( size % 64 ) numPacks++;
+    unsigned int numPacks {size/63};
+    if ( size % 63 ) numPacks++;
     char * cdata {(char *) data};
 
     package_t * packs {(package_t *) malloc(sizeof(package_t) * numPacks + 1)};
@@ -34,14 +34,35 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
         seq = (seq + 1) % 16;
 
         // copiar dados
-        for ( unsigned int j = 0; j < 64 && dataIndex < size; j++ ){
+        unsigned int j {0};
+        while ( j < 63 && dataIndex < size ){
           packs[i].data[j] = cdata[dataIndex];
-          dataIndex++;
+          dataIndex++; j++;
         }
+        packs[i].size = j;
     }
     initPackage(packs[numPacks], END_PACKAGE);
 
     return packs;
+}
+
+void * combineData(package_t * packs){
+    // Get size of data to copy
+    unsigned int size {0};
+    for (unsigned int curr {0}; packs[curr].type != END_PACKAGE; curr++) size++;
+    char * result {(char *)malloc( (size * 64) + 1 )};
+
+    unsigned int resultIndex {0};
+
+    // Copy the data
+    for ( unsigned int currPack {0}; packs[currPack].type != END_PACKAGE; currPack++ ){
+        unsigned int currCopy {0};
+        while ( currCopy < packs[currPack].size ){
+            result[resultIndex++] = packs[currPack].data[currCopy++];
+        }
+    }
+    result[resultIndex] = '\0';
+    return (void *)result;
 }
 
 void printPackage(const package_t &pckg){
