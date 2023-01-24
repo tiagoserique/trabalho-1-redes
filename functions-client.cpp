@@ -20,7 +20,8 @@ void sendMessage(const int &sckt){
                       (void *)message.c_str(),
                       message.size(),
                       TEXT_PACKAGE,
-                      0)};
+                      0,
+                      0 /* Client */)};
 
     unsigned int packI {0};
     package_t currPack = packs[0];
