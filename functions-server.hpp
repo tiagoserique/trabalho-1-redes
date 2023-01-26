@@ -21,7 +21,7 @@
 
     @return void
 */
-void handleMessages(const char *msg);
+void handleMessages(const package_t &pckg);
 
 /*
     @brief Receive the package using the socket
