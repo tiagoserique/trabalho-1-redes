@@ -17,7 +17,7 @@ void receivePackage(const int &sckt, package_t &pckg){
 void checkTypePackage(package_t &pckg){
     switch ( pckg.type ){
         case TEXT_PACKAGE:
-            handleMessages(pckg.data);
+            handleMessages(pckg);
             break;
 
         case MEDIA_PACKAGE:
@@ -48,18 +48,22 @@ void checkTypePackage(package_t &pckg){
 }
 
 
-void handleMessages(const char *msg){
-    // format
+void handleMessages(const package_t &pckg){
+    if ( !validateCRC(pckg) ){
+        return;
+    }
+
+    // message's format
     // [<date e hour>]<User> : message
     
     printDate();
-    std::cout << "<Usuário> : " << msg << std::endl << std::endl;
+    std::cout << "<Usuário> : " << pckg.data << std::endl << std::endl;
 }
 
 
 void handleMedias(){
-    // format
-    // [<data e hora>]<Usuário> : Arquivo de midia enviado! O arquivo pode ser encontrado em <caminho_para_arquivo>
+    // File message's format
+    // [<data e hour>]<User> : Arquivo de midia enviado! O arquivo pode ser encontrado em <caminho_para_arquivo>
 
     printDate();
     std::cout << "<Usuário> : " 
