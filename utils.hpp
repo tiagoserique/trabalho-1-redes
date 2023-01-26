@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <array>
+#include <ncurses.h>
 
 
 // typedefs ====================================================================

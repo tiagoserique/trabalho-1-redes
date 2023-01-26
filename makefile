@@ -1,6 +1,6 @@
 
 FLAGS = -Wall
-LIBS  = #-lncurses
+LIBS  = -lncurses
 DEBUG = -g
 CC    = g++
 OBJ   = ConexaoRawSocket.o utils.o
@@ -34,7 +34,7 @@ ConexaoRawSocket.o: ConexaoRawSocket.c ConexaoRawSocket.h
 	$(CC) $(FLAGS) -c ConexaoRawSocket.c
 
 utils.o: utils.cpp utils.hpp
-	$(CC) $(FLAGS) -c utils.cpp
+	$(CC) $(FLAGS) -c utils.cpp $(LIBS)
 
 # ==============================================================================
 
