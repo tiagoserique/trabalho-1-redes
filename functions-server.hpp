@@ -37,10 +37,11 @@ void receivePackage(const int &sckt, package_t &pckg);
     @brief Check the type of package
 
     @param pckg (package_t &) : The reference of package
+    @param sckt (const int &) : Socket to send ack/nack
 
     @return void    
 */
-void checkTypePackage(package_t &pckg);
+void checkTypePackage(const int &sckt, package_t &pckg);
 
 /*
     @brief Handle the case of receive medias

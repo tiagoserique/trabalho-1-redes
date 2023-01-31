@@ -6,7 +6,7 @@ void receivePackage(const int &sckt, package_t &pckg){
     ssize_t val {recv(sckt, &pckg, sizeof(pckg), 0)};
 
     if ( val >= 0 ){
-        checkTypePackage(pckg);
+        checkTypePackage(sckt, pckg);
     }
     else {
         std::cout << "Error receiving message" << std::endl;
@@ -14,7 +14,8 @@ void receivePackage(const int &sckt, package_t &pckg){
 }
 
 
-void checkTypePackage(package_t &pckg){
+void checkTypePackage(const int &sckt, package_t &pckg){
+    // TODO: Check crc if error send nack and return
     switch ( pckg.type ){
         case TEXT_PACKAGE:
             handleMessages(pckg);
@@ -44,6 +45,16 @@ void checkTypePackage(package_t &pckg){
 
         default:
             break;
+    }
+    package_t ack {};
+    initPackage( ack, ACK_PACKAGE );
+    ack.sequence = pckg.sequence;
+    ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
+    if ( ret < 0 ){
+        std::cerr << "Error sending ack" << std::endl;
+        std::cerr << std::endl;
+        std::cerr << errno << std::endl;
+        return;
     }
 }
 

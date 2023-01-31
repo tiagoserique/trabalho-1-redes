@@ -148,3 +148,12 @@ void printDate(){
         << "]";
 }
 
+void setSockTimeout(const int &sckt, const int useconds){
+    struct timeval tv {0};
+    tv.tv_usec = useconds;
+    if (setsockopt(sckt, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) 
+        std::cerr << "setsockopt failed\n";
+    
+    if (setsockopt(sckt, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
+        std::cerr << "setsockopt failed\n";
+}
