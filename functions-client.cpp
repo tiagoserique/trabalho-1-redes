@@ -73,7 +73,6 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
     timeoutCounter++;
   }
   if (timeoutCounter >= 20) return 0;
-  std::cerr << "Estabilished connection" << std::endl;
 
   // while there are still packs to send
   while ( packs[currPackIndex].type != END_PACKAGE ){
@@ -92,15 +91,11 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
     while ( (lastOK < packs[currPackIndex].sequence && packs[currPackIndex].sequence - lastOK < 16 - windowSize) ||
             (lastOK > packs[currPackIndex].sequence && lastOK - packs[currPackIndex].sequence > windowSize + 1) ){
       if ( lastOK == -1 ) {
-        std::cerr << "Timed out while sending packages" << std::endl;
-        return currPackIndex;
+        break;
       }
       lastOK = waitResponse(sckt, ACK_PACKAGE);
     }
-    std::cerr << "Starting index is  " << currPackIndex << std::endl;
-    std::cerr << "Sent starting from " << packs[currPackIndex].sequence << std::endl;
-    std::cerr << "Recieved till      " << lastOK << std::endl;
-    std::cerr << "Diference is       " << lastOK - packs[currPackIndex].sequence << std::endl;
+    if ( lastOK == -1 ) continue;
 
     // if sent all packages
     if ( packs[currPackIndex].type == END_PACKAGE ) break;
@@ -112,8 +107,6 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
     } else {
       currPackIndex += lastOK - packs[currPackIndex].sequence + 1;
     }
-    std::cerr << "Next start at      " << packs[currPackIndex].sequence << std::endl;
-    std::cerr << "Next index is      " << currPackIndex << std::endl << std::endl;
   }
   return currPackIndex;
 }
