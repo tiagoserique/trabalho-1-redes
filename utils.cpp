@@ -94,6 +94,7 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
         packs[i].crc = generateCRC(packs[i]);
     }
     initPackage(packs[numPacks], END_PACKAGE);
+    packs[numPacks].sequence = seq;
 
     return packs;
 }
