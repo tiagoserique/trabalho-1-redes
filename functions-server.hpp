@@ -34,6 +34,16 @@ void handleMessages(const package_t &pckg);
 void receivePackage(const int &sckt, package_t &pckg);
 
 /*
+    @brief Receive an array of packages using the socket
+
+    @param sckt (const int &) : The File Descriptor of the socket
+    @param seq (unsigned int) : The sequence number received packages should start
+
+    @return The array of packages received the last one should be of type END_PACKAGE
+*/
+package_t * receiveOtherPacks(const int &sckt, unsigned int seq);
+
+/*
     @brief Check the type of package
 
     @param pckg (package_t &) : The reference of package
@@ -41,7 +51,7 @@ void receivePackage(const int &sckt, package_t &pckg);
 
     @return void    
 */
-void checkTypePackage(const int &sckt, package_t &pckg);
+void checkTypePackage(package_t * packs);
 
 /*
     @brief Handle the case of receive medias

@@ -71,7 +71,7 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
     if ( !data ) return NULL;
     if ( size <= 0 ) return NULL;
 
-    unsigned int numPacks {size/63};
+    unsigned int numPacks {(size/63)+1};
     if ( size % 63 ) numPacks++;
     char * cdata {(char *) data};
 
