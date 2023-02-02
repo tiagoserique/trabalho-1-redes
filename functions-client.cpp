@@ -97,10 +97,12 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
       }
       lastOK = waitResponse(sckt, ACK_PACKAGE);
     }
+    std::cerr << "Starting index is  " << currPackIndex << std::endl;
+    std::cerr << "Sent starting from " << packs[currPackIndex].sequence << std::endl;
+    std::cerr << "Recieved till      " << lastOK << std::endl;
+    std::cerr << "Diference is       " << lastOK - packs[currPackIndex].sequence << std::endl;
     if ( lastOK == -1 ) continue;
 
-    // if sent all packages
-    if ( packs[currPackIndex].type == END_PACKAGE ) break;
 
     // if the sequence number would surpass 15
     if ( packs[currPackIndex].sequence - lastOK > windowSize ) {
@@ -109,8 +111,13 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
     } else {
       currPackIndex += lastOK - packs[currPackIndex].sequence + 1;
     }
+
+    // if sent all packages
+    if ( packs[currPackIndex-1].type == END_PACKAGE ) break;
+    std::cerr << "Next start at      " << packs[currPackIndex].sequence << std::endl;
+    std::cerr << "Next index is      " << currPackIndex << std::endl << std::endl;
   }
-  return currPackIndex;
+  return currPackIndex-1;
 }
 
 void quitProgram(bool &stop){
