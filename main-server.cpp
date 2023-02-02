@@ -9,6 +9,7 @@ int main(){
         std::cerr << "Error creating socket" << std::endl;
         return -1;
     }
+    setSockTimeout(socket, 100000);
 
 
     std::cout << "=============================" << std::endl;

@@ -35,7 +35,7 @@ void receivePackage(const int &sckt, package_t &pckg){
 package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
   package_t * packs {(package_t *)malloc(64 * sizeof(package_t))};
   unsigned int lastRecv {0};
-  unsigned int pcgkArraySize {64};
+  unsigned int pckgArraySize {64};
 
   package_t pckg {0};
   const unsigned int windowSize {5};
@@ -84,6 +84,10 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
       oks[difference] = true;
       if (pckg.type == END_PACKAGE) break;
     }
+    for ( unsigned int i {0}; i < windowSize; i++ ){
+      std::cerr << oks[i] << " ";
+    }
+    std::cerr << std::endl;
 
     //If couldnt receive first one, just time out
     if ( !oks[0] ) continue;
@@ -91,18 +95,26 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
     std::cerr << "Copying good receives" << std::endl;
     for ( unsigned int i {0}; i < windowSize && oks[i]; i++ ){
       packs[lastRecv++] = receiving[i];
-      seq++;
+      seq = (seq + 1) % 16;
+      if (lastRecv >= pckgArraySize) {
+        pckgArraySize += 64;
+        packs = (package_t*)realloc(packs, pckgArraySize * sizeof(package_t));
+      }
     }
     package_t ack {0};
     initPackage(ack, ACK_PACKAGE);
-    ack.sequence = seq;
-    std::cerr << "Sending ack for sliding window" << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl;
+    ack.sequence = (seq - 1) % 16;
+    std::cerr << "Sending ack for sliding window: " << seq << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl;
     ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
     if ( ret < 0 ){
         std::cerr << "Error sending ack for sliding window" << std::endl;
         std::cerr << std::endl;
         std::cerr << errno << std::endl;
         return NULL;
+    }
+    if ( packs[lastRecv-1].type == END_PACKAGE ) {
+      std::cerr << "Received all packages" << std::endl;
+      break;
     }
   }
 
