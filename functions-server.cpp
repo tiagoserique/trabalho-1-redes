@@ -28,6 +28,7 @@ void receivePackage(const int &sckt, package_t &pckg){
     }
     else {
         std::cerr << "Error receiving message" << std::endl;
+        printPackage(pckg);
     }
 }
 

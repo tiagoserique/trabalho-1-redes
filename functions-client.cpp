@@ -20,7 +20,7 @@ int waitResponse( const int &sckt, const unsigned int type );
 // Implementations
 // ---------------
 
-void sendMessage(const int &sckt){
+int sendMessage(const int &sckt, const int seq){
     char ch {};
     std::string message {};
     
@@ -30,17 +30,18 @@ void sendMessage(const int &sckt){
                       (void *)message.c_str(),
                       message.size(),
                       TEXT_PACKAGE,
-                      10)};
+                      (seq+1)%16)};
 
     unsigned int numSent = sendPacks(sckt, packs);
     if ( !numSent ) {
          std::cerr << "Error sending message" << std::endl;
          std::cerr << std::endl;
          std::cerr << errno << std::endl;
-         return;
+         return -1;
     }
     std::cerr << "Successful message sent" << std::endl;
     std::cerr << std::endl;
+    return packs[numSent-1].sequence;
 }
 
 
@@ -89,7 +90,6 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
       }
       if ( packs[currPackIndex+i].type == END_PACKAGE ) {
         std::cerr << "sending last package" << std::endl;
-        done = true;
         break;
       }
     }
@@ -118,18 +118,18 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
     }
 
     // if sent all packages
-    if ( packs[currPackIndex-1].type == END_PACKAGE ) break;
+    if ( packs[currPackIndex-1].type == END_PACKAGE ) done = true;
     std::cerr << "Next start at      " << packs[currPackIndex].sequence << std::endl;
     std::cerr << "Next index is      " << currPackIndex << std::endl << std::endl;
   }
-  return currPackIndex-1;
+  return currPackIndex;
 }
 
 void quitProgram(bool &stop){
     stop = true;
-    std::cerr << std::endl;
-    std::cerr << "Bye! | Tchau! | Tchüss!" << std::endl;
-    std::cerr << std::endl;
+    std::cout << std::endl;
+    std::cout << "Bye! | Tchau! | Tchüss!" << std::endl;
+    std::cout << std::endl;
 }
 
 
@@ -151,6 +151,8 @@ int waitResponse( const int &sckt, const unsigned int type ){
       }
 
       //printPackage(ack);
+      std::cerr << "Ack package:" << std::endl;
+      printPackage(ack);
       return ack.sequence;
     } while ( true );
 }
