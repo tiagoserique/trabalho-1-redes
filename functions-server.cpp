@@ -24,7 +24,7 @@ void receivePackage(const int &sckt, package_t &pckg){
 
         std::cerr << "First sequence to receive: " << pckg.sequence + 1 << std::endl;
         package_t * packs {receiveOtherPacks(sckt, pckg.sequence+1)};
-        checkTypePackage(packs);
+        handlePacks(packs);
     }
     else {
         std::cerr << "Error receiving message" << std::endl;
@@ -122,20 +122,39 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
 }
 
 
-void checkTypePackage(package_t * packs){
+void handlePacks(package_t * packs){
+  void * data = combineData(packs);
+  switch (packs[0].type){
+    case TEXT_PACKAGE:
+      handleMessages((char*)data);
+      break;
+    case MEDIA_PACKAGE:
+      break;
+    // case ACK_PACKAGE:
+    //   break;
+    // case NACK_PACKAGE:
+    //   break;
+    // case ERROR_PACKAGE:
+    //   break;
+    // case START_PACKAGE:
+    //   break;
+    // case END_PACKAGE:
+    //   break;
+    // case DATA_PACKAGE:
+    //   break;
+    // default:
+    //   break;
+  }
 }
 
 
-void handleMessages(const package_t &pckg){
-    if ( !validateCRC(pckg) ){
-        return;
-    }
+void handleMessages(char * data){
 
     // message's format
     // [<date e hour>]<User> : message
     
     printDate();
-    std::cout << "<Usuário> : " << pckg.data << std::endl << std::endl;
+    std::cout << "<Usuário> : " << data << std::endl << std::endl;
 }
 
 

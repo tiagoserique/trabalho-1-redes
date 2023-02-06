@@ -15,13 +15,13 @@
 // header functions ============================================================
 
 /*
-    @brief Handle the case of receive messages
+    @brief Handles printings messages
 
-    @param msg (const int &) : The message received
+    @param data (char *) : The message received
 
     @return void
 */
-void handleMessages(const package_t &pckg);
+void handleMessages(char * data);
 
 /*
     @brief Receive the package using the socket
@@ -44,14 +44,13 @@ void receivePackage(const int &sckt, package_t &pckg);
 package_t * receiveOtherPacks(const int &sckt, unsigned int seq);
 
 /*
-    @brief Check the type of package
+    @brief Merges the data in a sequence of packages and displays what is needed
 
-    @param pckg (package_t &) : The reference of package
-    @param sckt (const int &) : Socket to send ack/nack
+    @param packs (package_t *) : The array of packages
 
     @return void    
 */
-void checkTypePackage(package_t * packs);
+void handlePacks(package_t * packs);
 
 /*
     @brief Handle the case of receive medias
