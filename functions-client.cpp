@@ -76,7 +76,8 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
   std::cerr << "Estabilished connection" << std::endl;
 
   // while there are still packs to send
-  while ( packs[currPackIndex].type != END_PACKAGE ){
+  bool done = false;
+  while ( !done ){
     // send packages for current window
     for ( unsigned int i {0}; i < windowSize; i++){
       ssize_t ret {send(sckt, &(packs[currPackIndex+i]), sizeof(package_t), 0)}; 
@@ -86,7 +87,11 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
           std::cerr << errno << std::endl;
           return 0;
       }
-      if ( packs[currPackIndex+i].type == END_PACKAGE ) break;
+      if ( packs[currPackIndex+i].type == END_PACKAGE ) {
+        std::cerr << "sending last package" << std::endl;
+        done = true;
+        break;
+      }
     }
     int lastOK {waitResponse(sckt, ACK_PACKAGE)};
     // deal with errors from loopback
