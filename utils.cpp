@@ -119,13 +119,13 @@ void * combineData(package_t * packs){
 }
 
 void printPackage(const package_t &pckg){
-    std::cout << pckg.header   << std::endl;
-    std::cout << pckg.type     << std::endl;
-    std::cout << pckg.sequence << std::endl;
-    std::cout << pckg.size     << std::endl;
-    std::cout << pckg.data     << std::endl;
-    std::cout << pckg.crc      << std::endl;
-    std::cout << std::endl;
+    std::cerr << pckg.header   << std::endl;
+    std::cerr << pckg.type     << std::endl;
+    std::cerr << pckg.sequence << std::endl;
+    std::cerr << pckg.size     << std::endl;
+    std::cerr << pckg.data     << std::endl;
+    std::cerr << pckg.crc      << std::endl;
+    std::cerr << std::endl;
 }
 
 void printDate(){

@@ -27,7 +27,7 @@ void receivePackage(const int &sckt, package_t &pckg){
         checkTypePackage(packs);
     }
     else {
-        std::cout << "Error receiving message" << std::endl;
+        std::cerr << "Error receiving message" << std::endl;
     }
 }
 

@@ -136,7 +136,7 @@ int waitResponse( const int &sckt, const unsigned int type ){
     do{
       ssize_t val {recv(sckt, &ack, sizeof(ack), 0)};
       if ( val == -1 && ( errno == EAGAIN)){
-        std::cout << "Timed out " << EAGAIN << std::endl;
+        std::cerr << "Timed out " << EAGAIN << std::endl;
         return -1;
       }
 
