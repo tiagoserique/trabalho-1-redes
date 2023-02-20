@@ -4,52 +4,44 @@
 // Internal functions headers
 // --------------------------
 
-unsigned int waitAck(unsigned int seq, const int &sckt);
+/*
+    @brief Waits for Ack/Nack
+
+    @param sckt (const int &) : The File Descriptor of the socket
+    @param type (const int) : The type of package to wait
+
+    @return -1 if timed out
+    @return The sequence number of the ack package otherwise
+*/
+int waitResponse( const int &sckt, const unsigned int type );
 
 
 // ---------------
 // Implementations
 // ---------------
 
-void sendMessage(const int &sckt){
+int sendMessage(const int &sckt, const int seq){
     char ch {};
-    package_t start {};
     std::string message {};
     
     while ( (ch = (char) std::cin.get()) != STOP_INSERT_COMMAND ) message += ch;
 
-    initPackage(start, START_PACKAGE);
-    ssize_t ret {send(sckt, &start, sizeof(package_t), 0)}; 
-    if ( ret < 0 ){
-        std::cerr << "Error sending message" << std::endl;
-        std::cerr << std::endl;
-        std::cerr << errno << std::endl;
-        return;
-    }
     package_t * packs {divideData(
                       (void *)message.c_str(),
                       message.size(),
                       TEXT_PACKAGE,
-                      0)};
+                      (seq+1)%16)};
 
-    unsigned int packI {0};
-    package_t currPack = packs[0];
-    while ( currPack.type != END_PACKAGE ){
-        // Send
-        currPack = packs[packI];
-        ret = send(sckt, &currPack, sizeof(package_t), 0); 
-        if ( ret < 0 ){
-            std::cerr << "Error sending message" << std::endl;
-            std::cerr << std::endl;
-            std::cerr << errno << std::endl;
-            return;
-        }
-
-        // Wait for ack ( if timed out resend )
-        packI += waitAck( (unsigned int)currPack.sequence, sckt);
+    unsigned int numSent = sendPacks(sckt, packs);
+    if ( !numSent ) {
+         std::cerr << "Error sending message" << std::endl;
+         std::cerr << std::endl;
+         std::cerr << errno << std::endl;
+         return -1;
     }
     std::cerr << "Successful message sent" << std::endl;
     std::cerr << std::endl;
+    return packs[numSent-1].sequence;
 }
 
 
@@ -61,47 +53,106 @@ void sendFile(const int &sckt){
     std::cerr << std::endl;
 }
 
+unsigned int sendPacks(const int &sckt, package_t * packs){
+  const int windowSize {5};
+  unsigned int currPackIndex {0};
+
+  // send start package to stabilish connection
+  package_t start {};
+  initPackage(start, START_PACKAGE);
+  start.sequence = (packs[0].sequence - 1) % 16;
+
+  unsigned int timeoutCounter {0};
+  while ( waitResponse(sckt, ACK_PACKAGE) != start.sequence && timeoutCounter < 20){
+    ssize_t ret {send(sckt, &start, sizeof(package_t), 0)}; 
+    if ( ret < 0 ){
+        std::cerr << "Error sending packages" << std::endl;
+        std::cerr << std::endl;
+        std::cerr << errno << std::endl;
+        return 0;
+    }
+    timeoutCounter++;
+  }
+  if (timeoutCounter >= 20) return 0;
+  std::cerr << "Estabilished connection" << std::endl;
+
+  // while there are still packs to send
+  bool done = false;
+  while ( !done ){
+    // send packages for current window
+    for ( unsigned int i {0}; i < windowSize; i++){
+      ssize_t ret {send(sckt, &(packs[currPackIndex+i]), sizeof(package_t), 0)}; 
+      if ( ret < 0 ){
+          std::cerr << "Error sending packages" << std::endl;
+          std::cerr << std::endl;
+          std::cerr << errno << std::endl;
+          return 0;
+      }
+      if ( packs[currPackIndex+i].type == END_PACKAGE ) {
+        std::cerr << "sending last package" << std::endl;
+        break;
+      }
+    }
+    int lastOK {waitResponse(sckt, ACK_PACKAGE)};
+    // deal with errors from loopback
+    while ( (lastOK < packs[currPackIndex].sequence && packs[currPackIndex].sequence - lastOK < 16 - windowSize) ||
+            (lastOK > packs[currPackIndex].sequence && lastOK - packs[currPackIndex].sequence > windowSize + 1) ){
+      if ( lastOK == -1 ) {
+        break;
+      }
+      lastOK = waitResponse(sckt, ACK_PACKAGE);
+    }
+    std::cerr << "Starting index is  " << currPackIndex << std::endl;
+    std::cerr << "Sent starting from " << packs[currPackIndex].sequence << std::endl;
+    std::cerr << "Recieved till      " << lastOK << std::endl;
+    std::cerr << "Diference is       " << lastOK - packs[currPackIndex].sequence << std::endl;
+    if ( lastOK == -1 ) continue;
+
+
+    // if the sequence number would surpass 15
+    if ( packs[currPackIndex].sequence - lastOK > windowSize ) {
+      currPackIndex += lastOK + 16 - packs[currPackIndex].sequence + 1;
+    // generic case
+    } else {
+      currPackIndex += lastOK - packs[currPackIndex].sequence + 1;
+    }
+
+    // if sent all packages
+    if ( packs[currPackIndex-1].type == END_PACKAGE ) done = true;
+    std::cerr << "Next start at      " << packs[currPackIndex].sequence << std::endl;
+    std::cerr << "Next index is      " << currPackIndex << std::endl << std::endl;
+  }
+  return currPackIndex;
+}
 
 void quitProgram(bool &stop){
     stop = true;
-    std::cerr << std::endl;
-    std::cerr << "Bye! | Tchau! | Tchüss!" << std::endl;
-    std::cerr << std::endl;
+    std::cout << std::endl;
+    std::cout << "Bye! | Tchau! | Tchüss!" << std::endl;
+    std::cout << std::endl;
 }
 
 
 // Internal functions
 
-/*
-    @brief Waits for ack signal
-
-    @param seq (unsigned int) : desired sequence number of ack package
-    @param sckt (const int &) : The File Descriptor of the socket
-
-    @return 1 if received ack
-    @return 0 if timed out
-*/
-unsigned int waitAck(unsigned int seq, const int &sckt){
+int waitResponse( const int &sckt, const unsigned int type ){
     package_t ack {};
 
     do{
       ssize_t val {recv(sckt, &ack, sizeof(ack), 0)};
-      if ( val == -1 && ( errno = EAGAIN)){
-        std::cout << "Timed out" << std::endl;
-        return 0;
+      if ( val == -1 && ( errno == EAGAIN)){
+        std::cerr << "Timed out " << EAGAIN << std::endl;
+        return -1;
       }
 
-      if ( ack.type != ACK_PACKAGE ){
+      if ( ack.type != type ){
         // TODO: Save somewhere
         continue;
       }
 
-      if ( (unsigned int)ack.sequence != seq ){
-        // TODO: Save somewhere
-        continue;
-      }
-
+      //printPackage(ack);
+      std::cerr << "Ack package:" << std::endl;
       printPackage(ack);
-      return 1;
+      return ack.sequence;
     } while ( true );
 }

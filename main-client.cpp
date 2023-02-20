@@ -3,6 +3,7 @@
 
 int main(){
     bool stop {false};
+    int seq = 0;
 
     int socket {cria_raw_socket((char *) "lo")};
     if ( socket < 0 ){
@@ -23,7 +24,7 @@ int main(){
         std::cin.ignore();
 
         if ( INSERT_COMMAND == command ){
-            sendMessage(socket);
+            seq = sendMessage(socket, seq) + 1;
         }
         if ( SEND_COMMAND == command ){
             sendFile(socket);
@@ -31,5 +32,6 @@ int main(){
         if ( QUIT_COMMAND == command ){
             quitProgram(stop);
         }
+        std::cerr << "New sequence number is: " << seq << std::endl;
     }
 }
