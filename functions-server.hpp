@@ -57,7 +57,7 @@ void handlePacks(package_t * packs);
 
     @return void
 */
-void handleMedias();
+void handleMedias(char *data);
  
 
 #endif

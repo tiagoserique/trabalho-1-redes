@@ -2,28 +2,36 @@
 #define UTILS_HPP
 
 
-// includes ====================================================================
+// --------
+// Includes
+// --------
 
 #include <cstdlib>
 #include <stdlib.h>
 #include <net/if.h>
 #include <iostream>
 #include <array>
+#include <fstream>
+#include <filesystem>
 
 
-// typedefs ====================================================================
+// --------
+// Tipedefs
+// --------
 
 typedef struct package_t {
-    unsigned int header   : 8; 
-    unsigned int type     : 6; 
-    unsigned int sequence : 4; 
-    unsigned int size     : 6; 
-    unsigned char data[63]; 
-    unsigned char crc     : 8;
+    unsigned int header   : 8; // header of package
+    unsigned int type     : 6; // type of package
+    unsigned int seq      : 4; // sequence number of package (0-15)
+    unsigned int size     : 6; // size of data
+    unsigned char data[63];    // data
+    unsigned char crc     : 8; // crc8 wcdma generate with 0x9B
 } package_t;
 
 
-// constraints =================================================================
+// --------
+// Constraints
+// --------
 
 // mark of package
 constexpr static unsigned int PACKAGE_START_MARK {0x7E}; // marca: 0x7E
@@ -73,7 +81,9 @@ constexpr static unsigned char crc8x_table[] = {
 };
 
 
-// header functions ============================================================
+// ---------------
+// Kermit Protocol
+// ---------------
 
 /*
     @brief Init the package with the type of package
@@ -84,6 +94,11 @@ constexpr static unsigned char crc8x_table[] = {
     @return void
 */
 void initPackage(package_t &pckg, unsigned int type);
+
+
+// -----------------
+// Data Manipulation
+// -----------------
 
 /*
     @brief Divides the data sent into an array of packages
@@ -108,6 +123,11 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
 */
 void * combineData(package_t * packs);
 
+
+// ---------------
+// Print Functions
+// ---------------
+
 /*
     @brief Print the package
 
@@ -123,6 +143,11 @@ void printPackage(const package_t &pckg);
     @return void
 */
 void printDate();
+
+
+// ---------------------
+// CRC8 WCDMA Calcultion
+// ---------------------
 
 /*
     @brief Validate the CRC of the package with the a new CRC generated with the
@@ -161,6 +186,11 @@ unsigned char generateCRC(const package_t &pckg);
     @return Returns the reflected data
 */
 unsigned char reflectData(const unsigned char &data);
+
+
+// --------------
+// Socket Timeout
+// --------------
 
 /*
     @brief Sets the time to wait for receiving/sending on a socket

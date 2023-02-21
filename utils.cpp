@@ -2,19 +2,23 @@
 #include "utils.hpp"
 
 
-// kermit protocol =============================================================
+// ---------------
+// Kermit Protocol
+// ---------------
 
 void initPackage(package_t &pckg, unsigned int type){
     pckg.header   = PACKAGE_START_MARK;
     pckg.type     = type;
-    pckg.sequence = 1;
+    pckg.seq      = 1;
     pckg.size     = 0;
     pckg.data[0]  = '\0';
     pckg.crc      = 0x00;
 }
 
 
-// crc 8 wcdma calculation =====================================================
+// -----------------------
+// CRC 8 WCDMA Calculation
+// -----------------------
 
 bool validateCRC(const package_t &pckg){
     unsigned char crc {generateCRC(pckg)};
@@ -65,7 +69,9 @@ unsigned char reflectData(const unsigned char &data){
 }
 
 
-// utils =======================================================================
+// -----------------
+// Data Manipulation
+// -----------------
 
 package_t * divideData(void * data, unsigned int size, unsigned int type, unsigned int seq){
     if ( !data ) return NULL;
@@ -81,7 +87,7 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
     unsigned int dataIndex {0};
     for ( unsigned int i = 0; i < numPacks; i++ ){
         initPackage(packs[i], type);
-        packs[i].sequence = seq;
+        packs[i].seq = seq;
         seq = (seq + 1) % 16;
 
         // copy data
@@ -94,7 +100,7 @@ package_t * divideData(void * data, unsigned int size, unsigned int type, unsign
         packs[i].crc = generateCRC(packs[i]);
     }
     initPackage(packs[numPacks], END_PACKAGE);
-    packs[numPacks].sequence = seq;
+    packs[numPacks].seq = seq;
 
     return packs;
 }
@@ -118,10 +124,15 @@ void * combineData(package_t * packs){
     return (void *)result;
 }
 
+
+// -----------------
+// Print Functions
+// -----------------
+
 void printPackage(const package_t &pckg){
     std::cerr << pckg.header   << std::endl;
     std::cerr << pckg.type     << std::endl;
-    std::cerr << pckg.sequence << std::endl;
+    std::cerr << pckg.seq      << std::endl;
     std::cerr << pckg.size     << std::endl;
     std::cerr << pckg.data     << std::endl;
     std::cerr << pckg.crc      << std::endl;
@@ -149,6 +160,11 @@ void printDate(){
         << "]";
 }
 
+
+// --------------
+// Socket Timeout
+// --------------
+
 void setSockTimeout(const int &sckt, const int useconds){
     struct timeval tv {0};
     tv.tv_usec = useconds;
@@ -158,3 +174,36 @@ void setSockTimeout(const int &sckt, const int useconds){
     if (setsockopt(sckt, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
         std::cerr << "setsockopt failed\n";
 }
+
+
+// ----------------
+// File Manipulation
+// ----------------
+
+// void *readFile(const std::string &filename, unsigned int &size){
+//     // std::ifstream file {filename, std::ios::binary | std::ios::ate};
+//     std::ifstream file {filename, std::ios::ate};
+//     if ( !file.is_open() ) return NULL;
+
+//     size = file.tellg();
+//     char *buffer {(char *) malloc(size + 1)};
+//     if ( !buffer ) return NULL;
+
+//     file.seekg(0, std::ios::beg);
+//     file.read(buffer, size);
+//     file.close();
+
+//     buffer[size] = '\0';
+//     return (void *)buffer;
+// }
+
+// bool writeFile(const char * filename, void * data, unsigned int size){
+//     std::ofstream file {filename};
+//     if ( !file.is_open() ) return false;
+
+//     file.write((char *)data, size);
+//     file.close();
+
+//     return true;
+// }
+
