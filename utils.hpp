@@ -16,7 +16,7 @@
 typedef struct package_t {
     unsigned int header   : 8; 
     unsigned int type     : 6; 
-    unsigned int sequence : 4; 
+    unsigned int seq      : 4; 
     unsigned int size     : 6; 
     unsigned char data[63]; 
     unsigned char crc     : 8;

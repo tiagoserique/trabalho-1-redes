@@ -13,7 +13,7 @@ void receivePackage(const int &sckt, package_t &pckg){
         //send ack for first package
         package_t ack {0};
         initPackage(ack, ACK_PACKAGE);
-        ack.sequence = pckg.sequence;
+        ack.seq = pckg.seq;
         ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
         if ( ret < 0 ){
             std::cerr << "Error sending ack for start" << std::endl;
@@ -22,8 +22,8 @@ void receivePackage(const int &sckt, package_t &pckg){
             return;
         }
 
-        std::cerr << "First sequence to receive: " << pckg.sequence + 1 << std::endl;
-        package_t * packs {receiveOtherPacks(sckt, pckg.sequence+1)};
+        std::cerr << "First sequence to receive: " << pckg.seq + 1 << std::endl;
+        package_t * packs {receiveOtherPacks(sckt, pckg.seq+1)};
         handlePacks(packs);
     }
     else {
@@ -52,23 +52,23 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
       //CRC validation
       if ( !validateCRC(pckg) ) { continue; }
       //If duplicate package from loopback
-      if ( (pckg.sequence < seq && seq - pckg.sequence < 16 - windowSize ) ||
-           (pckg.sequence > seq && pckg.sequence - seq > windowSize) ||
+      if ( (pckg.seq < seq && seq - pckg.seq < 16 - windowSize ) ||
+           (pckg.seq > seq && pckg.seq - seq > windowSize) ||
            (pckg.type == ACK_PACKAGE || pckg.type == NACK_PACKAGE)){
         std::cerr << "Duplicate from LoopBack" << std::endl;
         std::cerr << seq << std::endl;
-        std::cerr << pckg.sequence << std::endl;
+        std::cerr << pckg.seq << std::endl;
         i--;
         continue;
       }
 
       //Find where to put package in the temporary array
       int difference {0};
-      difference = pckg.sequence - seq;
+      difference = pckg.seq - seq;
 
       //If sequence number supassed 15
       if ( difference < 0 ){
-        difference = pckg.sequence + 16 - seq;
+        difference = pckg.seq + 16 - seq;
       }
 
       //Check if already had that package
@@ -104,7 +104,7 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
     }
     package_t ack {0};
     initPackage(ack, ACK_PACKAGE);
-    ack.sequence = (seq - 1) % 16;
+    ack.seq = (seq - 1) % 16;
     std::cerr << "Sending ack for sliding window: " << seq << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl;
     ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
     if ( ret < 0 ){
