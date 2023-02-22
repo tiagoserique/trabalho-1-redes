@@ -2,45 +2,53 @@
 #define UTILS_HPP
 
 
-// includes ====================================================================
+// --------
+// Includes
+// --------
 
 #include <cstdlib>
 #include <stdlib.h>
 #include <net/if.h>
 #include <iostream>
 #include <array>
+#include <fstream>
+#include <filesystem>
 
 
-// typedefs ====================================================================
+// --------
+// Tipedefs
+// --------
 
 typedef struct package_t {
-    unsigned int header   : 8; 
-    unsigned int type     : 6; 
-    unsigned int seq      : 4; 
-    unsigned int size     : 6; 
-    unsigned char data[63]; 
-    unsigned char crc     : 8;
+    uint32_t header       : 8; // header of package
+    uint32_t type         : 6; // type of package
+    uint32_t seq          : 4; // sequence number of package (0-15)
+    uint32_t size         : 6; // size of data
+    unsigned char data[63];    // data
+    unsigned char crc     : 8; // crc8 wcdma generate with 0x9B
 } package_t;
 
 
-// constraints =================================================================
+// --------
+// Constraints
+// --------
 
 // mark of package
-constexpr static unsigned int PACKAGE_START_MARK {0x7E}; // marca: 0x7E
+constexpr static uint32_t PACKAGE_START_MARK {0x7E}; // marca: 0x7E
 
 // types of package
-constexpr static unsigned int TEXT_PACKAGE  {0x01}; // texto: 0x01
-constexpr static unsigned int MEDIA_PACKAGE {0x10}; // mídia: 0x10
-constexpr static unsigned int ACK_PACKAGE   {0x0A}; // ack: 0x0A
-constexpr static unsigned int NACK_PACKAGE  {0x00}; // nack: 0x00
-constexpr static unsigned int ERROR_PACKAGE {0x1E}; // erro: 0x1E
-constexpr static unsigned int START_PACKAGE {0x1D}; // inicio de transmissão: 0x1D
-constexpr static unsigned int END_PACKAGE   {0x0F}; // fim de transmissão: 0x0F
-constexpr static unsigned int DATA_PACKAGE  {0x0D}; // dados: 0x0D
+constexpr static uint32_t TEXT_PACKAGE  {0x01}; // texto: 0x01
+constexpr static uint32_t MEDIA_PACKAGE {0x10}; // mídia: 0x10
+constexpr static uint32_t ACK_PACKAGE   {0x0A}; // ack: 0x0A
+constexpr static uint32_t NACK_PACKAGE  {0x00}; // nack: 0x00
+constexpr static uint32_t ERROR_PACKAGE {0x1E}; // erro: 0x1E
+constexpr static uint32_t START_PACKAGE {0x1D}; // inicio de transmissão: 0x1D
+constexpr static uint32_t END_PACKAGE   {0x0F}; // fim de transmissão: 0x0F
+constexpr static uint32_t DATA_PACKAGE  {0x0D}; // dados: 0x0D
 
 // address of server and client
-constexpr static unsigned int SERVER_ADDRESS {0x01};
-constexpr static unsigned int CLIENT_ADDRESS {0x02};
+constexpr static uint32_t SERVER_ADDRESS {0x01};
+constexpr static uint32_t CLIENT_ADDRESS {0x02};
 
 // commands
 const short int   STOP_INSERT_COMMAND {27};
@@ -73,40 +81,56 @@ constexpr static unsigned char crc8x_table[] = {
 };
 
 
-// header functions ============================================================
+// ---------------
+// Kermit Protocol
+// ---------------
 
 /*
     @brief Init the package with the type of package
 
     @param pckg (package_t &) : The reference of package
-    @param type (unsigned int) : The type of package
+    @param type (uint32_t) : The type of package
 
     @return void
 */
-void initPackage(package_t &pckg, unsigned int type);
+void initPackage(package_t &pckg, uint32_t type);
+
+
+// -----------------
+// Data Manipulation
+// -----------------
 
 /*
     @brief Divides the data sent into an array of packages
 
-    @param data (void *)       : An array with the data that is going to be sent
-    @param size (unsigned int) : The size of the array data
-    @param type (unsigned int) : The type of the packages to be created
-    @param seq  (unsigned int) : The desired sequence number of the starting package
-    @param src  (unsigned int) : Who is sending the message
+    @param data (const void *) : An array with the data that is going to be sent
+    @param size (uint32_t)     : The size of the array data
+    @param type (uint32_t)     : The type of the packages to be created
+    @param seq  (uint32_t)     : The desired sequence number of the starting 
+    package
+    @param fName (const std::string &)    : The name of the file to be sent
+    @param uName (const std::string &)    : The username of the client
 
-    @return Returns an array of packages containing the data sent, the last element will have type END_PACKAGE
-    @return Returns NULL if there is an error
+    @return Returns an array of packages containing the data sent, the last 
+    element will have type END_PACKAGE. Returns NULL if there is an error
 */
-package_t * divideData(void * data, unsigned int size, unsigned int type, unsigned int seq);
+package_t * divideData(const void *data, uint32_t size, uint32_t type, 
+uint32_t seq, const std::string &fName = "", const std::string &uName = "Drey Drey");
 
 /*
     @brief Combines data from an array of packages into an array of voids
     
-    @param packs (package_t *) : An array of packages, first package with data, last package should have type END_PACKAGE
+    @param packs (package_t *) : An array of packages, first package with data, 
+    last package should have type END_PACKAGE
 
     @return Returns an array of the data that was contained in the packages plus a '\0' at the end
 */
-void * combineData(package_t * packs);
+char *combineData(package_t * packs);
+
+
+// ---------------
+// Print Functions
+// ---------------
 
 /*
     @brief Print the package
@@ -123,6 +147,11 @@ void printPackage(const package_t &pckg);
     @return void
 */
 void printDate();
+
+
+// ---------------------
+// CRC8 WCDMA Calcultion
+// ---------------------
 
 /*
     @brief Validate the CRC of the package with the a new CRC generated with the
@@ -156,17 +185,22 @@ unsigned char generateCRC(const package_t &pckg);
 /*
     @brief Reflect the data for CRC calculation
 
-    @param data (unsigned char) : The data to be reflected
+    @param data (const unsigned char) : The data to be reflected
 
     @return Returns the reflected data
 */
 unsigned char reflectData(const unsigned char &data);
 
+
+// --------------
+// Socket Timeout
+// --------------
+
 /*
     @brief Sets the time to wait for receiving/sending on a socket
 
     @param sckt (cont int &) : socket to set the timeout timer
-    @param useconds (unsigned int) : time in microseconds to set the timeout (1.000.000=1 second)
+    @param useconds (const int) : time in microseconds to set the timeout (1.000.000=1 second)
 
     @return void
 */

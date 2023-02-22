@@ -18,16 +18,20 @@ int main(){
     std::cout << "=============================" << std::endl;
 
 
+    std::cout << "Enter your username: ";
+    std::string username {};
+    std::cin >> username;
+
     while ( !stop ){
         std::string command {};
         std::cin >> command;
         std::cin.ignore();
 
         if ( INSERT_COMMAND == command ){
-            seq = sendMessage(socket, seq) + 1;
+            seq = sendMessage(socket, seq, username) + 1;
         }
         if ( SEND_COMMAND == command ){
-            sendFile(socket);
+            seq = sendFile(socket, seq, username) + 1;
         }
         if ( QUIT_COMMAND == command ){
             quitProgram(stop);
