@@ -9,8 +9,25 @@ void receivePackage(const int &sckt, package_t &pckg){
         return;
     }
 
-    if ( val >= 0 ){
-        handlePacks(sckt, &pckg);
+    if ( val >= 0 && pckg.type == START_PACKAGE){
+        // send ack for first package
+        package_t ack {0};
+        initPackage(ack, ACK_PACKAGE);
+        ack.seq = packs[0].seq;
+        ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
+        
+        if ( ret < 0 ){
+            std::cerr << "Error sending ack for start" << std::endl;
+            std::cerr << std::endl;
+            std::cerr << errno << std::endl;
+            return;
+        }
+
+        std::cerr << "First sequence to receive: " << packs[0].seq + 1 << std::endl;
+        package_t *newPacks {receiveOtherPacks(sckt, packs[0].seq + 1)};
+        handlePacks(sckt, newPacks);
+
+        free(newPacks);
     }
     // else {
     //     std::cerr << "Error receiving message" << std::endl;
@@ -147,28 +164,8 @@ void handlePacks(const int &sckt, package_t *packs){
         //   break;
         // case ERROR_PACKAGE:
         //   break;
-        case START_PACKAGE:
-        {
-            // send ack for first package
-            package_t ack {0};
-            initPackage(ack, ACK_PACKAGE);
-            ack.seq = packs[0].seq;
-            ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
-            
-            if ( ret < 0 ){
-                std::cerr << "Error sending ack for start" << std::endl;
-                std::cerr << std::endl;
-                std::cerr << errno << std::endl;
-                return;
-            }
-
-            std::cerr << "First sequence to receive: " << packs[0].seq + 1 << std::endl;
-            package_t *newPacks {receiveOtherPacks(sckt, packs[0].seq + 1)};
-            handlePacks(sckt, newPacks);
-
-            free(newPacks);
-        }
-        break;
+        // case START_PACKAGE;
+        //   break;
         default:
         break;
     }
