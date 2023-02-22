@@ -9,23 +9,8 @@ void receivePackage(const int &sckt, package_t &pckg){
         return;
     }
 
-    if ( val >= 0 && pckg.type == START_PACKAGE ){
-        //send ack for first package
-        package_t ack {0};
-        initPackage(ack, ACK_PACKAGE);
-        ack.seq = pckg.seq;
-        ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
-        
-        if ( ret < 0 ){
-            std::cerr << "Error sending ack for start" << std::endl;
-            std::cerr << std::endl;
-            std::cerr << errno << std::endl;
-            return;
-        }
-
-        std::cerr << "First sequence to receive: " << pckg.seq + 1 << std::endl;
-        package_t *packs {receiveOtherPacks(sckt, pckg.seq + 1)};
-        handlePacks(packs);
+    if ( val >= 0 ){
+        handlePacks(sckt, &pckg);
     }
     // else {
     //     std::cerr << "Error receiving message" << std::endl;
@@ -34,20 +19,20 @@ void receivePackage(const int &sckt, package_t &pckg){
 }
 
 
-package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
+package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
     package_t * packs {(package_t *)malloc(64 * sizeof(package_t))};
-    unsigned int lastRecv {0};
-    unsigned int pckgArraySize {64};
+    uint32_t lastRecv {0};
+    uint32_t pckgArraySize {64};
 
     package_t pckg {0};
-    const unsigned int windowSize {5};
+    const uint32_t windowSize {5};
 
     for (;;){
         std::array<package_t, windowSize> receiving {0};
         std::array<bool, windowSize> oks {};
     
-        for ( unsigned int i {0}; i < windowSize; i++ ) oks[i] = false;
-        for ( unsigned int i {0}; i < windowSize; i++){
+        for ( uint32_t i {0}; i < windowSize; i++ ) oks[i] = false;
+        for ( uint32_t i {0}; i < windowSize; i++){
             ssize_t val {recv(sckt, &pckg, sizeof(pckg), 0)};
         
             //If timeout
@@ -93,7 +78,7 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
             if (pckg.type == END_PACKAGE) break;
         }
         
-        for ( unsigned int i {0}; i < windowSize; i++ ){
+        for ( uint32_t i {0}; i < windowSize; i++ ){
             std::cerr << oks[i] << " ";
         }
         std::cerr << std::endl;
@@ -104,7 +89,7 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
         // Copy good receiveds to permanent
         std::cerr << "Copying good receives" << std::endl;
         
-        for ( unsigned int i {0}; i < windowSize && oks[i]; i++ ){
+        for ( uint32_t i {0}; i < windowSize && oks[i]; i++ ){
             packs[lastRecv++] = receiving[i];
             seq = (seq + 1) % 16;
             if (lastRecv >= pckgArraySize) {
@@ -125,6 +110,7 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
             << std::endl 
             << std::endl 
             << std::endl;
+
         ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
 
         if ( ret < 0 ){
@@ -144,67 +130,81 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
 }
 
 
-void handlePacks(package_t * packs){
-    void * data = combineData(packs);
-
+void handlePacks(const int &sckt, package_t *packs){
     switch (packs[0].type){
         case TEXT_PACKAGE:
-            handleMessages((char*) data);
-            break;
+            handleMessages(packs);
+        break;
         case MEDIA_PACKAGE:
-            handleMedias((char*) data);
-            break;
+            handleMedias(packs);
+        break;
         // case ACK_PACKAGE:
         //   break;
         // case NACK_PACKAGE:
         //   break;
         // case ERROR_PACKAGE:
         //   break;
-        // case START_PACKAGE:
-        //   break;
-        // case END_PACKAGE:
-        //   break;
-        // case DATA_PACKAGE:
-        //   break;
-        // default:
-        //   break;
+        case START_PACKAGE:
+        {
+            // send ack for first package
+            package_t ack {0};
+            initPackage(ack, ACK_PACKAGE);
+            ack.seq = packs[0].seq;
+            ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
+            
+            if ( ret < 0 ){
+                std::cerr << "Error sending ack for start" << std::endl;
+                std::cerr << std::endl;
+                std::cerr << errno << std::endl;
+                return;
+            }
+
+            std::cerr << "First sequence to receive: " << packs[0].seq + 1 << std::endl;
+            package_t *newPacks {receiveOtherPacks(sckt, packs[0].seq + 1)};
+            handlePacks(sckt, newPacks);
+
+            free(newPacks);
+        }
+        break;
+        default:
+        break;
     }
 }
 
 
-void handleMessages(char * data){
+void handleMessages(package_t *packs){
+    char *data {combineData(packs)};
 
-    // message's format
-    // [<date e hour>]<User> : message
-    
     printDate();
-    std::cout << "<Usuário> : " << data << std::endl << std::endl;
+    std::cout << data << std::endl << std::endl;
+
+    delete data;
 }
 
 
-void handleMedias(char *data){
-    // File message's format
-    /* [<data e hour>]<User> : Arquivo de midia enviado! O arquivo pode ser 
-        encontrado em <caminho_para_arquivo>
-    */
-
-    std::string path {"./receivedFiles/"};
-
-    if ( !std::filesystem::exists(path) ){
-        std::filesystem::create_directory(path);
+void handleMedias(package_t *packs){
+    std::string saveDir {"./receivedFiles/"};
+    if ( !std::filesystem::exists(saveDir) ){
+        std::filesystem::create_directory(saveDir);
     }
 
-    std::string fileName {path + "file"};
-    std::ofstream file {fileName, std::ios::binary};
+    uint32_t size {0};
+    for (; packs[size].type != END_PACKAGE; size++);
 
+    std::string username {(char *) packs[size - 2].data};
+    std::string fileName {(char *) packs[size - 1].data};
+    std::string path {saveDir + fileName};
+    std::ofstream file {path, std::ios::binary}; 
 
-    file.write(data, sizeof(data));
-
+    for (uint32_t curr {0}; curr != size - 2; curr++){ 
+        file.write((char *) packs[curr].data, packs[curr].size);
+    }
+    
     file.close();
 
     printDate();
-    std::cout << "<Usuário> : " 
+    std::cout << username << " : " 
         << "Arquivo de midia enviado! O arquivo pode ser encontrado em " 
-        << fileName
+        << path
         << std::endl << std::endl;
 }

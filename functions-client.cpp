@@ -5,9 +5,9 @@
 // Implementations
 // ---------------
 
-int sendMessage(const int &sckt, const int seq){
+int sendMessage(const int &sckt, const int &seq, const std::string &username){
     char ch {};
-    std::string message {};
+    std::string message {username + " : "};
     
     while ( (ch = (char) std::cin.get()) != STOP_INSERT_COMMAND ) message += ch;
 
@@ -16,11 +16,11 @@ int sendMessage(const int &sckt, const int seq){
             (void *)message.c_str(), 
             message.size(), 
             TEXT_PACKAGE, 
-            (seq+1)%16
+            (seq + 1) % 16
         )
     };
 
-    unsigned int numSent {sendPacks(sckt, packs)};
+    uint32_t numSent {sendPacks(sckt, packs)};
     if ( !numSent ) {
         std::cerr << "Error sending message" << std::endl;
         std::cerr << std::endl;
@@ -30,55 +30,66 @@ int sendMessage(const int &sckt, const int seq){
 
     std::cerr << "Successful message sent" << std::endl;
     std::cerr << std::endl;
-    return packs[numSent-1].seq;
+
+    uint32_t ret {packs[numSent - 1].seq};
+
+    delete packs;
+    return ret;
 }
 
 
-void sendFile(const int &sckt){
+int sendFile(const int &sckt, const int &seq, const std::string &username){
     std::string path;
     
     std::cout << "Enter file path: ";
     std::cin >> path;
 
+    std::string fileName {path.substr(path.find_last_of("/") + 1)};
+
     std::ifstream file {path, std::ios::binary};
     if ( !file.is_open() ){
         std::cerr << "Error opening file" << std::endl;
         std::cerr << std::endl;
-        return;
+        return -1;
     }
 
     file.seekg(0, std::ios::end);
     std::streampos fileSize {file.tellg()};
     file.seekg(0, std::ios::beg);
 
-    std::cout << "File size: " << fileSize << std::endl;
-
     char *buffer {new char[fileSize]};
     file.read(buffer, fileSize);
+    file.close();
 
     package_t *packs {
         divideData(
             (void *)buffer, 
             fileSize, 
             MEDIA_PACKAGE, 
-            0
+            (seq + 1) % 16,
+            fileName,
+            username
         )
     };
 
-    unsigned int numSent {sendPacks(sckt, packs)};
+    uint32_t numSent {sendPacks(sckt, packs)};
 
     if ( !numSent ) {
         std::cerr << "Error sending file" << std::endl;
         std::cerr << std::endl;
         std::cerr << errno << std::endl;
-        return;
+        return -1;
     }
-
     std::cerr << "Successful file sent" << std::endl;
-
     std::cerr << std::endl;
-
     std::cerr << "Number of packages sent: " << numSent << std::endl;
+
+    uint32_t ret {packs[numSent - 1].seq};
+
+    delete packs;
+    delete buffer;
+
+    return ret;
 }
 
 
@@ -94,7 +105,7 @@ void quitProgram(bool &stop){
 // Internal functions headers
 // --------------------------
 
-int waitResponse( const int &sckt, const unsigned int type ){
+int waitResponse(const int &sckt, const uint32_t type){
     package_t ack {};
 
     do {
@@ -118,16 +129,16 @@ int waitResponse( const int &sckt, const unsigned int type ){
 }
 
 
-unsigned int sendPacks(const int &sckt, package_t * packs){
+uint32_t sendPacks(const int &sckt, package_t * packs){
     const int windowSize {5};
-    unsigned int currPackIndex {0};
+    uint32_t currPackIndex {0};
 
     // send start package to stabilish connection
     package_t start {};
     initPackage(start, START_PACKAGE);
     start.seq = (packs[0].seq - 1) % 16;
 
-    unsigned int timeoutCounter {0};
+    uint32_t timeoutCounter {0};
     while ( waitResponse(sckt, ACK_PACKAGE) != start.seq && timeoutCounter < 20){
         ssize_t ret {send(sckt, &start, sizeof(package_t), 0)}; 
         if ( ret < 0 ){
@@ -146,7 +157,7 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
     bool done = false;
     while ( !done ){
         // send packages for current window
-        for ( unsigned int i {0}; i < windowSize; i++){
+        for (uint32_t i {0}; i < windowSize; i++){
             ssize_t ret {send(sckt, &(packs[currPackIndex+i]), sizeof(package_t), 0)}; 
             if ( ret < 0 ){
                 std::cerr << "Error sending packages" << std::endl;
