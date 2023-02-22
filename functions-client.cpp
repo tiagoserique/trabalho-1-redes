@@ -107,14 +107,11 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
             (response.type != ACK_PACKAGE && response.type != NACK_PACKAGE) ){
       hadResponse = waitResponse(sckt, &response);
       if ( hadResponse == 0 ) lastOK = response.seq;
-      if ( response.type == NACK_PACKAGE ){
-        //if package valid from loopback
-        if ( (lastOK < packs[currPackIndex].seq && packs[currPackIndex].seq - lastOK < 16 - windowSize) ||
-             (lastOK > packs[currPackIndex].seq && lastOK - packs[currPackIndex].seq > windowSize + 1) ){
-          lastOK = (lastOK - 1) % 16;
-          gotNack = true;
-        }
-      }
+    }
+
+    if ( response.type == NACK_PACKAGE ){
+      gotNack = true;
+      lastOK = (lastOK - 1) % 16;
     }
     std::cerr << "Starting index is  " << currPackIndex << std::endl;
     std::cerr << "Sent starting from " << packs[currPackIndex].seq << std::endl;
@@ -131,10 +128,11 @@ unsigned int sendPacks(const int &sckt, package_t * packs){
       currPackIndex += lastOK - packs[currPackIndex].seq + 1;
     }
 
-    // if sent all packages
-    if ( packs[currPackIndex-1].type == END_PACKAGE ) done = true;
     std::cerr << "Next start at      " << packs[currPackIndex].seq << std::endl;
     std::cerr << "Next index is      " << currPackIndex << std::endl << std::endl;
+
+    // if sent all packages
+    if ( currPackIndex > 0 && packs[currPackIndex-1].type == END_PACKAGE ) done = true;
   }
   return currPackIndex;
 }

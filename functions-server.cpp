@@ -41,16 +41,18 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
   package_t pckg {0};
   const unsigned int windowSize {5};
 
+  srand(time(NULL));
+
   for (;;){
     std::array<package_t, windowSize> receiving {0};
     std::array<bool, windowSize> oks {};
+    unsigned int errIndex = windowSize;
     for ( unsigned int i {0}; i < windowSize; i++ ) oks[i] = false;
     for ( unsigned int i {0}; i < windowSize; i++){
       ssize_t val {recv(sckt, &pckg, sizeof(pckg), 0)};
       //If timeout
       if ( val == -1 && ( errno == EAGAIN ) ){ break; }
-      //CRC validation
-      if ( !validateCRC(pckg) ) { continue; }
+
       //If duplicate package from loopback
       if ( (pckg.seq < seq && seq - pckg.seq < 16 - windowSize ) ||
            (pckg.seq > seq && pckg.seq - seq > windowSize) ||
@@ -78,6 +80,13 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
         continue;
       }
 
+      //Check corruption of package (add commented rand to test)
+      if ( pckg.header != PACKAGE_START_MARK || !validateCRC(pckg) /*|| (rand() % 100 < 10)*/) {
+        errIndex = std::min(errIndex, (unsigned int)difference);
+        oks[difference] = false;
+        continue;
+      }
+
       //Save otherwise
       std::cerr << "Got new package" << std::endl;
       printPackage(pckg);
@@ -85,16 +94,15 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
       oks[difference] = true;
       if (pckg.type == END_PACKAGE) break;
     }
+    std::cerr << "errIndex: " << errIndex << std::endl;
     for ( unsigned int i {0}; i < windowSize; i++ ){
       std::cerr << oks[i] << " ";
     }
     std::cerr << std::endl;
 
-    //If couldnt receive first one, just time out
-    if ( !oks[0] ) continue;
-    // Copy good receiveds to permanent
+    // Copy good receives to permanent
     std::cerr << "Copying good receives" << std::endl;
-    for ( unsigned int i {0}; i < windowSize && oks[i]; i++ ){
+    for ( unsigned int i {0}; i < windowSize && i < errIndex && oks[i]; i++ ){
       packs[lastRecv++] = receiving[i];
       seq = (seq + 1) % 16;
       if (lastRecv >= pckgArraySize) {
@@ -102,18 +110,26 @@ package_t * receiveOtherPacks(const int &sckt, unsigned int seq){
         packs = (package_t*)realloc(packs, pckgArraySize * sizeof(package_t));
       }
     }
-    package_t ack {0};
-    initPackage(ack, ACK_PACKAGE);
-    ack.seq = (seq - 1) % 16;
-    std::cerr << "Sending ack for sliding window: " << seq << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl;
-    ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
+    package_t response {0};
+    // If no package got corrupted respond with ack else respond with nack
+    if ( errIndex == windowSize ){
+        initPackage(response, ACK_PACKAGE);
+        response.seq = (seq - 1) % 16;
+    } else {
+        initPackage(response, NACK_PACKAGE);
+        response.seq = seq;
+    }
+    std::cerr << "Sending response for sliding window: " << std::endl;
+    printPackage(response);
+    std::cerr << std::endl << std::endl;
+    ssize_t ret {send(sckt, &response, sizeof(package_t), 0)}; 
     if ( ret < 0 ){
-        std::cerr << "Error sending ack for sliding window" << std::endl;
+        std::cerr << "Error sending response for sliding window" << std::endl;
         std::cerr << std::endl;
         std::cerr << errno << std::endl;
         return NULL;
     }
-    if ( packs[lastRecv-1].type == END_PACKAGE ) {
+    if ( lastRecv > 0 && packs[lastRecv-1].type == END_PACKAGE ) {
       std::cerr << "Received all packages" << std::endl;
       break;
     }
