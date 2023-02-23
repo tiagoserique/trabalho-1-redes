@@ -43,6 +43,7 @@ package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
 
     package_t pckg {0};
     const uint32_t windowSize {5};
+    uint32_t mask {windowSize};
     
     srand(time(NULL));
 
@@ -57,9 +58,6 @@ package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
         
             //If timeout
             if ( val == -1 && ( errno == EAGAIN ) ){ break; }
-        
-            //CRC validation
-            if ( !validateCRC(pckg) ) { continue; }
         
             //If duplicate package from loopback
             if ( (pckg.seq < seq && seq - pckg.seq < 16 - windowSize ) ||
@@ -89,7 +87,7 @@ package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
             }
             
             //Check corruption of package (add commented rand to test)
-            if ( pckg.header != PACKAGE_START_MARK || !validateCRC(pckg) /*|| (rand() % 100 < 10)*/) {
+            if ( pckg.header != PACKAGE_START_MARK || !validateCRC(pckg) || (rand() % 100 < 50)) {
                 errIndex = std::min(errIndex, (unsigned int)difference);
                 oks[difference] = false;
                 continue;
@@ -99,6 +97,13 @@ package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
             std::cerr << "Got new package" << std::endl;
             
             printPackage(pckg);
+            
+            if ( difference == mask ) {
+              mask = windowSize;
+              maskPackage(&pckg);
+              std::cerr << "------------------------------Unmasked:" << std::endl;
+              printPackage(pckg);
+            }
             
             receiving[difference] = pckg;
             oks[difference] = true;
@@ -129,6 +134,8 @@ package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
         } else {
             initPackage(response, NACK_PACKAGE);
             response.seq = seq;
+            mask = 0;
+            errIndex = windowSize;
         }
         std::cerr << "Sending response for sliding window: " << std::endl;
         printPackage(response);

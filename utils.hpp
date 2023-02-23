@@ -127,6 +127,15 @@ uint32_t seq, const std::string &fName = "", const std::string &uName = "Drey Dr
 */
 char *combineData(package_t * packs);
 
+/*
+    @brief Masks the data inside package and regenerates crc
+
+    @param pckg (package_t *) : The package to be masked
+
+    @return void
+*/
+void maskPackage(package_t * pckg);
+
 
 // ---------------
 // Print Functions
