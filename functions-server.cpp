@@ -87,7 +87,7 @@ package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
             }
             
             //Check corruption of package (add commented rand to test)
-            if ( pckg.header != PACKAGE_START_MARK || !validateCRC(pckg) || (rand() % 100 < 50)) {
+            if ( pckg.header != PACKAGE_START_MARK || !validateCRC(pckg) /*|| (rand() % 100 < 50)*/) {
                 errIndex = std::min(errIndex, (unsigned int)difference);
                 oks[difference] = false;
                 continue;
