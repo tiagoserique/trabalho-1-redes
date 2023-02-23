@@ -13,7 +13,7 @@ void receivePackage(const int &sckt, package_t &pckg){
         // send ack for first package
         package_t ack {0};
         initPackage(ack, ACK_PACKAGE);
-        ack.seq = packs[0].seq;
+        ack.seq = pckg.seq;
         ssize_t ret {send(sckt, &ack, sizeof(package_t), 0)}; 
         
         if ( ret < 0 ){
@@ -23,8 +23,8 @@ void receivePackage(const int &sckt, package_t &pckg){
             return;
         }
 
-        std::cerr << "First sequence to receive: " << packs[0].seq + 1 << std::endl;
-        package_t *newPacks {receiveOtherPacks(sckt, packs[0].seq + 1)};
+        std::cerr << "First sequence to receive: " << pckg.seq + 1 << std::endl;
+        package_t *newPacks {receiveOtherPacks(sckt, pckg.seq + 1)};
         handlePacks(sckt, newPacks);
 
         free(newPacks);
