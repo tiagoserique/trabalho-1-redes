@@ -1,5 +1,20 @@
 #include "functions-client.hpp"
 
+// --------------------------
+// Internal functions headers
+// --------------------------
+
+/*
+    @brief Waits for Ack/Nack
+
+    @param sckt (const int &) : The File Descriptor of the socket
+    @param pckg (package_t *) : The package that will be received
+
+    @return -1 if timed out
+    @return 0 on success
+*/
+int waitResponse( const int &sckt, package_t * pckg );
+
 
 // ---------------
 // Implementations
@@ -61,6 +76,7 @@ int sendFile(const int &sckt, const int &seq, const std::string &username){
     file.read(buffer, fileSize);
     file.close();
 
+
     package_t *packs {
         divideData(
             (void *)buffer, 
@@ -105,26 +121,21 @@ void quitProgram(bool &stop){
 // Internal functions headers
 // --------------------------
 
-int waitResponse(const int &sckt, const uint32_t type){
-    package_t ack {};
 
-    do {
-        ssize_t val {recv(sckt, &ack, sizeof(ack), 0)};
-        if ( val == -1 && ( errno == EAGAIN)){
-            std::cerr << "Timed out " << EAGAIN << std::endl;
-            return -1;
-        }
+int waitResponse( const int &sckt, package_t * pckg ){
+    do{
+      ssize_t val {recv(sckt, pckg, sizeof(pckg), 0)};
+      if ( val == -1 && ( errno == EAGAIN)){
+        std::cerr << "Timed out " << EAGAIN << std::endl;
+        return -1;
+      }
 
-        if ( ack.type != type ){
-            // TODO: Save somewhere
-            continue;
-        }
-
-        //printPackage(ack);
-        std::cerr << "Ack package:" << std::endl;
-        printPackage(ack);
-      
-        return ack.seq;
+      //printPackage(pckg);
+      if (pckg->type == ACK_PACKAGE || pckg->type == NACK_PACKAGE ){
+          std::cerr << "(n)ack package:" << std::endl;
+          printPackage(*pckg);
+      }
+      return 0;
     } while ( true );
 }
 
@@ -139,7 +150,8 @@ uint32_t sendPacks(const int &sckt, package_t * packs){
     start.seq = (packs[0].seq - 1) % 16;
 
     uint32_t timeoutCounter {0};
-    while ( waitResponse(sckt, ACK_PACKAGE) != start.seq && timeoutCounter < 20){
+    package_t response {};
+    while ( timeoutCounter < 20 ){
         ssize_t ret {send(sckt, &start, sizeof(package_t), 0)}; 
         if ( ret < 0 ){
             std::cerr << "Error sending packages" << std::endl;
@@ -147,9 +159,10 @@ uint32_t sendPacks(const int &sckt, package_t * packs){
             std::cerr << errno << std::endl;
             return 0;
         }
+        int hadResponse {waitResponse(sckt, &response)};
+        if ( hadResponse == 0 && response.type == ACK_PACKAGE && response.seq == start.seq ) break;
         timeoutCounter++;
     }
-    
     if (timeoutCounter >= 20) return 0;
     std::cerr << "Estabilished connection" << std::endl;
 
@@ -172,23 +185,28 @@ uint32_t sendPacks(const int &sckt, package_t * packs){
             }
         }
 
-        int lastOK {waitResponse(sckt, ACK_PACKAGE)};
+        response.type = START_PACKAGE;
+        int hadResponse {0};
+        int lastOK {-1};
+        bool gotNack = false;
         
         // deal with errors from loopback
         while ( (lastOK < packs[currPackIndex].seq && packs[currPackIndex].seq - lastOK < 16 - windowSize) ||
-                (lastOK > packs[currPackIndex].seq && lastOK - packs[currPackIndex].seq > windowSize + 1) ){
-            
-            if ( lastOK == -1 ) {
-                break;
-            }
-            
-            lastOK = waitResponse(sckt, ACK_PACKAGE);
+                (lastOK > packs[currPackIndex].seq && lastOK - packs[currPackIndex].seq > windowSize + 1)  ||
+                (response.type != ACK_PACKAGE && response.type != NACK_PACKAGE) ){
+            hadResponse = waitResponse(sckt, &response);
+            if ( hadResponse == 0 ) lastOK = response.seq;
+        }
+        
+        if ( response.type == NACK_PACKAGE ){
+          gotNack = true;
+          lastOK = (lastOK - 1) % 16;
         }
         std::cerr << "Starting index is  " << currPackIndex << std::endl;
         std::cerr << "Sent starting from " << packs[currPackIndex].seq << std::endl;
         std::cerr << "Recieved till      " << lastOK << std::endl;
         std::cerr << "Diference is       " << lastOK - packs[currPackIndex].seq << std::endl;
-        if ( lastOK == -1 ) continue;
+        if ( hadResponse == -1 ) continue;
 
 
         // if the seq number would surpass 15
@@ -200,10 +218,11 @@ uint32_t sendPacks(const int &sckt, package_t * packs){
             currPackIndex += lastOK - packs[currPackIndex].seq + 1;
         }
 
-        // if sent all packages
-        if ( packs[currPackIndex-1].type == END_PACKAGE ) done = true;
         std::cerr << "Next start at      " << packs[currPackIndex].seq << std::endl;
         std::cerr << "Next index is      " << currPackIndex << std::endl << std::endl;
+        
+        // if sent all packages
+        if ( currPackIndex > 0 && packs[currPackIndex-1].type == END_PACKAGE ) done = true;
     }
 
     return currPackIndex;
