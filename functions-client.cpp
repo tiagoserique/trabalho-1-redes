@@ -168,6 +168,7 @@ uint32_t sendPacks(const int &sckt, package_t * packs){
 
     // while there are still packs to send
     bool done = false;
+    uint32_t lastMask {(uint32_t)-1}; // max value
     while ( !done ){
         // send packages for current window
         for (uint32_t i {0}; i < windowSize; i++){
@@ -200,6 +201,7 @@ uint32_t sendPacks(const int &sckt, package_t * packs){
         
         if ( response.type == NACK_PACKAGE ){
           gotNack = true;
+          std::cerr << "---------Got nack on " << lastOK << std::endl;
           lastOK = (lastOK - 1) % 16;
         }
         std::cerr << "Starting index is  " << currPackIndex << std::endl;
@@ -216,6 +218,12 @@ uint32_t sendPacks(const int &sckt, package_t * packs){
         } 
         else {
             currPackIndex += lastOK - packs[currPackIndex].seq + 1;
+        }
+
+        // mask if there was a nack and package was never masked
+        if ( gotNack && lastMask != currPackIndex){
+            maskPackage( &(packs[currPackIndex]) );
+            lastMask = currPackIndex;
         }
 
         std::cerr << "Next start at      " << packs[currPackIndex].seq << std::endl;

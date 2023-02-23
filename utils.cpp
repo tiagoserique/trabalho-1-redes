@@ -169,6 +169,13 @@ char *combineData(package_t * packs){
     return result;
 }
 
+void maskPackage(package_t * pckg){
+    char masks[] = {85, 51};
+    for ( uint32_t i {0}; i < pckg->size; i++ ){
+        pckg->data[i] = pckg->data[i] ^ masks[i%2];
+    }
+    pckg->crc = generateCRC(*pckg);
+}
 
 // -----------------
 // Print Functions
