@@ -19,7 +19,12 @@ def getInput():
 
     paddedData = data + [0 for _ in range(49-len(data))]
 
-    return dataRaw, data, paddedData
+    grid = [[0 for __ in range(7)] for _ in range(7)]
+    for i in range(7):
+        for j in range(7):
+            grid[i][j] = paddedData[i*7+j]
+
+    return dataRaw, data, paddedData, grid
 
 def rebuildData(grid):
     rebuildData = ''
@@ -37,7 +42,7 @@ def calcParity(grid):
         grid[i] += [s]
 
     line = []
-    for j in range(8):
+    for j in range(7):
         s = 0
         for i in range(7):
             s += grid[i][j]
@@ -65,7 +70,7 @@ def streamtoGrid(stream):
 
 def addErrorToStream(stream):
     l = [l for l in stream]
-    l[random.randrange(0, len(l))] = random.choice(list(map(chr, range(256))))
+    l[random.randrange(0, len(l)-9)] = random.choice(list(map(chr, range(256))))
     s = ''.join(l)
     return s
 
@@ -101,29 +106,36 @@ def correctGrid(grid):
     return grid
 
 def printGrid(grid):
+    print()
+    print("Print grid: ")
     for g in grid:
         for gg in g:
-            print(gg, ' ', end='')
+            print(str(gg).ljust(3), ' ', end='')
         print()
+    print()
 
 if __name__ == "__main__":
 
-    dataRaw, data, paddedData = getInput()
+    dataRaw, data, paddedData, grid = getInput()
 
-    grid = [[0 for __ in range(7)] for _ in range(7)]
-    for i in range(7):
-        for j in range(7):
-            grid[i][j] = paddedData[i*7+j]
-
-    print(dataRaw)
+    print("Dados originais:", dataRaw)
+    printGrid(grid)
     calcParity(grid)
+    printGrid(grid)
     stream = gridToStream(grid)
+    streamOriginal = stream
+    print("Dados a serem enviados: \n", stream)
     stream = addErrorToStream(stream)
-    grid = streamtoGrid(stream)
-    print(rebuildData(grid))
-    grid = correctGrid(grid)
-    print(rebuildData(grid))
+    print("Dados recebidos com erro: \n", stream)
+    for i in range(len(streamOriginal)):
+        if stream[i] != streamOriginal[i]:
+            pos = i
+            break
+    print(pos, " "*(pos-(2 if pos < 10 else 3)), stream[pos])
 
-    # print(dataRaw)
+    grid = streamtoGrid(stream)
+    grid = correctGrid(grid)
+    print("Frase arrumada: \n", rebuildData(grid))
+
     # print(grid)
     # print(stream)
