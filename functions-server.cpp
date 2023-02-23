@@ -29,10 +29,6 @@ void receivePackage(const int &sckt, package_t &pckg){
 
         free(newPacks);
     }
-    // else {
-    //     std::cerr << "Error receiving message" << std::endl;
-    //     printPackage(pckg);
-    // }
 }
 
 
@@ -71,7 +67,7 @@ package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
             }
 
             //Find where to put package in the temporary array
-            int difference {0};
+            uint32_t difference {0};
             difference = pckg.seq - seq;
 
             //If sequence number supassed 15

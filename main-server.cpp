@@ -11,7 +11,7 @@ int main(){
     }
     setSockTimeout(socket, 100000);
 
-
+    system("clear");
     std::cout << "=============================" << std::endl;
     std::cout << "\t Server \t" << std::endl;
     std::cout << "=============================" << std::endl;

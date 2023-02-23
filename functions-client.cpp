@@ -21,10 +21,12 @@ int waitResponse( const int &sckt, package_t * pckg );
 // ---------------
 
 int sendMessage(const int &sckt, const int &seq, const std::string &username){
+    std::cout << "(Press ESC to stop inserting at the end of the message)" << std::endl;
+    
     char ch {};
     std::string message {username + " : "};
     
-    while ( (ch = (char) std::cin.get()) != STOP_INSERT_COMMAND ) message += ch;
+    while ( (ch = std::cin.get()) != STOP_INSERT_COMMAND ) message += ch;
 
     package_t * packs {
         divideData(
@@ -123,19 +125,20 @@ void quitProgram(bool &stop){
 
 
 int waitResponse( const int &sckt, package_t * pckg ){
-    do{
-      ssize_t val {recv(sckt, pckg, sizeof(pckg), 0)};
-      if ( val == -1 && ( errno == EAGAIN)){
-        std::cerr << "Timed out " << EAGAIN << std::endl;
-        return -1;
-      }
+    do {
+        ssize_t val {recv(sckt, pckg, sizeof(pckg), 0)};
+        if ( val == -1 && ( errno == EAGAIN)){
+            std::cerr << "Timed out " << EAGAIN << std::endl;
+            return -1;
+        }
 
-      //printPackage(pckg);
-      if (pckg->type == ACK_PACKAGE || pckg->type == NACK_PACKAGE ){
-          std::cerr << "(n)ack package:" << std::endl;
-          printPackage(*pckg);
-      }
-      return 0;
+        //printPackage(pckg);
+        if (pckg->type == ACK_PACKAGE || 
+            (pckg->type == NACK_PACKAGE && pckg->header == PACKAGE_START_MARK) ){
+            std::cerr << "(n)ack package:" << std::endl;
+            printPackage(*pckg);
+        }
+        return 0;
     } while ( true );
 }
 

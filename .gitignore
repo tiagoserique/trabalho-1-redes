@@ -3,3 +3,6 @@ arquivos-extras/
 receivedFiles/
 send/
 .vscode/
+client
+server
+logs/

@@ -12,7 +12,7 @@ int main(){
     }
     setSockTimeout(socket, 100000);
 
-
+    system("clear");
     std::cout << "=============================" << std::endl;
     std::cout << "\t Client \t" << std::endl;
     std::cout << "=============================" << std::endl;
@@ -22,7 +22,17 @@ int main(){
     std::string username {};
     std::cin >> username;
 
+    system("clear");
     while ( !stop ){
+        std::cout << "=============================" << std::endl;
+        std::cout << "\t Commands \t" << std::endl;
+        std::cout << "=============================" << std::endl;
+        std::cout << "Insert message: " << INSERT_COMMAND << std::endl;
+        std::cout << "Send file: " << SEND_COMMAND << std::endl;
+        std::cout << "Quit: " << QUIT_COMMAND << std::endl;
+        std::cout << "=============================" << std::endl;
+
+        std::cout << "Enter command: ";
         std::string command {};
         std::cin >> command;
         std::cin.ignore();

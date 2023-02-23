@@ -51,10 +51,10 @@ constexpr static uint32_t SERVER_ADDRESS {0x01};
 constexpr static uint32_t CLIENT_ADDRESS {0x02};
 
 // commands
-const short int   STOP_INSERT_COMMAND {27};
-const std::string INSERT_COMMAND      {"i"};
-const std::string QUIT_COMMAND        {":q"};
-const std::string SEND_COMMAND        {":send"};
+constexpr static uint8_t STOP_INSERT_COMMAND {27};
+const static std::string INSERT_COMMAND      {"i"};
+const static std::string QUIT_COMMAND        {":q"};
+const static std::string SEND_COMMAND        {":send"};
 
 // crc8 table
 constexpr static unsigned char crc8x_table[] = {
