@@ -187,8 +187,8 @@ void handleMessages(package_t *packs){
 
 void handleMedias(package_t *packs){
     std::string saveDir {"./receivedFiles/"};
-    if ( !std::filesystem::exists(saveDir) ){
-        std::filesystem::create_directory(saveDir);
+    if ( mkdir(saveDir.c_str(), 0755) == -1 && errno != EEXIST){
+        return;
     }
 
     uint32_t size {0};

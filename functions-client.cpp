@@ -114,7 +114,7 @@ int sendFile(const int &sckt, const int &seq, const std::string &username){
 void quitProgram(bool &stop){
     stop = true;
     std::cout << std::endl;
-    std::cout << "Bye! | Tchau! | Tchüss!" << std::endl;
+    std::cout << "Bye! | Tchau! | Tchüss! | さようなら!" << std::endl;
     std::cout << std::endl;
 }
 
