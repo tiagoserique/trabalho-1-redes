@@ -33,7 +33,10 @@ def rebuildData(grid):
     rebuildData = ''
     for i in range(7):
         for j in range(7):
-            rebuildData += chr(grid[i][j])
+            try:
+                rebuildData += chr(grid[i][j])
+            except Exception:
+                rebuildData += '*'
 
     return rebuildData
 
@@ -74,15 +77,40 @@ def streamtoGrid(stream):
 def addErrorToStream(stream):
     # Adiciona um erro aleatorio na sequencia
     l = [l for l in stream]
-    l[random.randrange(0, size)] = random.choice(list(map(chr, range(256))))
+    l[random.randrange(0, size)] = random.choice(string.ascii_letters)
+    l[random.randrange(0, size)] = random.choice(string.ascii_letters)
     s = ''.join(l)
     return s
+
+def checkError(grid, ierr, jerr):
+    line = 0
+    for i in range(7):
+        line += grid[ierr][i]
+    
+    line -= grid[ierr][7]
+
+    col = 0
+    for i in range(7):
+        col += grid[i][jerr]
+
+    col -= grid[7][jerr]
+
+    # print(ierr, jerr)
+    # print(line, col)
+
+    if col == 0 or line == 0:
+        return False
+    return True
+
+def checkCantCorrect(iError, jError):
+    print(iError, jError)
+    return False
 
 def correctGrid(grid):
     # recebe uma matriz com erro e tenta corrigir
 
-    iError = -1
-    jError = -1
+    iError = []
+    jError = []
 
     # Acha os erros em linha
     for i in range(7):
@@ -90,7 +118,7 @@ def correctGrid(grid):
         for j in range(7):
             s += grid[i][j]
         if s != grid[i][7]:
-            iError = i
+            iError += [i]
 
     # acha os erros em coluna
     for j in range(7):
@@ -98,17 +126,36 @@ def correctGrid(grid):
         for i in range(7):
             s += grid[i][j]
         if s != grid[7][j]:
-            jError = j
+            jError += [j]
 
-    if iError==-1 or jError==-1: return grid
+    if iError==[] or jError==[]: return grid, True
 
-    start = grid[iError][7]
+    for ierr in iError:
+        for jerr in jError:
+            if checkError(grid, ierr, jerr):
+                start = grid[ierr][7]
+                for i in range(7):
+                    if i == jerr: continue
+                    start -= grid[ierr][i]
+                grid[ierr][jerr] = start
+
+    # Acha os erros em linha
     for i in range(7):
-        if i == jError: continue
-        start -= grid[iError][i]
-    grid[iError][jError] = start
+        s = 0
+        for j in range(7):
+            s += grid[i][j]
+        if s != grid[i][7]:
+            return grid, False
 
-    return grid
+    # acha os erros em coluna
+    for j in range(7):
+        s = 0
+        for i in range(7):
+            s += grid[i][j]
+        if s != grid[7][j]:
+            return grid, False
+
+    return grid, True
 
 def printGrid(grid):
     print()
@@ -123,24 +170,28 @@ if __name__ == "__main__":
 
     dataRaw, data, paddedData, grid = getInput()
 
-    print("Dados originais:", dataRaw)
-    printGrid(grid)
+    print("Dados originais: \n", dataRaw)
+    # printGrid(grid)
     calcParity(grid)
-    printGrid(grid)
+    # printGrid(grid)
     stream = gridToStream(grid)
     streamOriginal = stream
     print("Dados a serem enviados: \n", stream)
     stream = addErrorToStream(stream)
     print("Dados recebidos com erro: \n", stream)
+
+    # check errors
+    pos = []
     for i in range(len(streamOriginal)):
         if stream[i] != streamOriginal[i]:
-            pos = i
-            break
-    print(pos, " "*(pos-(2 if pos < 10 else 3)), stream[pos])
+            pos += [i]
+    for p in pos:
+        print(p, " "*(p-(2 if p < 10 else 3)), stream[p])
 
     grid = streamtoGrid(stream)
-    grid = correctGrid(grid)
-    print("Frase arrumada: \n", rebuildData(grid))
-
-    # print(grid)
-    # print(stream)
+    grid, cond = correctGrid(grid)
+    if cond:
+        print("Conseguiu arrumar")
+    else:
+        print("Impossivel arrumar, reenviar")
+    print("Frase resultante: \n", rebuildData(grid))
