@@ -67,7 +67,7 @@ package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
             }
 
             //Find where to put package in the temporary array
-            uint32_t difference {0};
+            int difference {0};
             difference = pckg.seq - seq;
 
             //If sequence number supassed 15
@@ -94,7 +94,7 @@ package_t * receiveOtherPacks(const int &sckt, uint32_t seq){
             
             printPackage(pckg);
             
-            if ( difference == mask ) {
+            if ( difference == (int)mask ) {
               mask = windowSize;
               maskPackage(&pckg);
               std::cerr << "------------------------------Unmasked:" << std::endl;
